@@ -7,6 +7,10 @@ from datetime import datetime
 import keyboard 
 import argparse
 
+"""
+These are all the command line arguments that can be passed to the program 
+to employ its various functionalities. The help line displays what the particular flag does 
+"""
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--count", type=int, help="Enter number of packets to capture")
 parser.add_argument("-p", "--protocol", type=str, nargs='*', help="Filter for protocol")
@@ -15,9 +19,12 @@ parser.add_argument("-src", "--source_ip", type=str, help="Filter for source ip 
 parser.add_argument("-dst", "--destination_ip", type=str, help="Filter for destination ip address")
 parser.add_argument("-r", "--read_file", type=str, help="Read a Packet Capture file")
 parser.add_argument("-w", "--write_file", type=str, help="Write to a Packet Capture file")
-parser.add_argument("-flags", "--flags", type=str, help="Print out the packet flags")
+parser.add_argument("-flags", "--flags", type=str, help="Print out the packet flags") 
 args = parser.parse_args()
 
+"""
+This creates a writer object to write to the packet capture file specified by the user. 
+"""
 if (args.write_file != None) : 
     writer = PcapWriter(filename=args.write_file, sync=True, append=True)
 
@@ -30,11 +37,18 @@ protocols = {
     "HTTP": HTTP
 }
 
+"""
+The first type of scan is the flag scan. 
+It takes as a parameter a scapy packet and checks if the CLI parameter supplied with the -flags option 
+is a valid protocol that has flags. 
+"""
 def flag_scan(packet) : 
     if keyboard.is_pressed('q') :
+        print("-"*150)
         print("Scan ended")
+        print(datetime.now())
         sys.exit(0)
-    time.sleep(0.1)
+
 
     try : 
         protocol = protocols[args.flags.upper()]
@@ -48,26 +62,37 @@ def flag_scan(packet) :
     except AttributeError : 
         print("Layer does not have flags")
 
-def process(packet) : 
+"""
+This scan is a simple scan. 
+It takes as a parameter a scapy packet and simply prints the summary of the packet along with 
+the time of when it was recieved or sent out.
+"""
+def simple_scan(packet) : 
     if keyboard.is_pressed('q') :
+        print("-"*150)
         print("Scan ended")
+        print(datetime.now())
         sys.exit(0)
-    time.sleep(0.1)
+
 
     if args.write_file != None : 
         writer.write(packet)
      
     print(datetime.fromtimestamp(float(packet.time)), packet.summary())
 
-             
-def process2(packet) :
-    print(datetime.fromtimestamp(float(packet.time)), packet.summary())
-
+"""
+This scan takes effect if the user specifies a source or destination IP addres or both 
+to analyze data to and from. The source and destination ip addresses are parts of the header of the IP layer
+and hence the scan first checks if the packet has an IP layer, then checking if the source or destination ip or both
+match the ones specified.
+"""
 def ip_scan(packet) : 
     if keyboard.is_pressed('q') :
+        print("-"*150)
         print("Scan ended")
+        print(datetime.now())
         sys.exit(0)
-    time.sleep(0.1)
+
 
     try :
         if (packet.haslayer(IP)) : 
@@ -95,11 +120,17 @@ def ip_scan(packet) :
     except : 
         print("An unexcepcted exception occurred")
 
+"""
+This scan checks if the paacket has the protocol layer which was passed as a parameter in the 
+-he flag. If it does, the header of the packet is printed out. 
+"""
 def header_scan(packet) :
     if keyboard.is_pressed('q') :
+        print("-"*150)
         print("Scan ended")
+        print(datetime.now())
         sys.exit(0)
-    time.sleep(0.1)
+
     try : 
         header = protocols[args.header.upper()]
         if packet.haslayer(header) : 
@@ -111,6 +142,11 @@ def header_scan(packet) :
         print("Please enter valid protocol")
         sys.exit(0)
 
+"""
+Many protocols can be specified at a time so this scan first creates a string to be
+passed as parameter while capturing packets with the following protocols. 
+Once the string is created, it calls the simple scan with the filter. 
+"""
 def protocol_filtered_scan(protocol) :
     list_of_filters = [] 
     for filter in args.protocol :
@@ -121,7 +157,7 @@ def protocol_filtered_scan(protocol) :
 
     if (args.count != None) : 
         try :
-            sniff(prn=process, count = args.count, filter=filters, store=False)
+            sniff(prn=simple_scan, count = args.count, filter=filters, store=False)
 
         except scapy.error.Scapy_Exception : #if the filter entered is incorrect
             print("Please choose a valid filter")
@@ -129,7 +165,7 @@ def protocol_filtered_scan(protocol) :
 
     else :
         try :
-            sniff(prn=process, filter=filters, store=False)
+            sniff(prn=simple_scan, filter=filters, store=False)
 
         except scapy.error.Scapy_Exception : #if the filter entered is incorrect
             print("Please choose a valid filter")
@@ -168,10 +204,29 @@ def main() :
 
     else : 
         if args.count != None : 
-            sniff(prn=process, store=False, count=args.count)
+            sniff(prn=simple_scan, store=False, count=args.count)
         else : 
-            sniff(prn=process, store=False)
+            sniff(prn=simple_scan, store=False)
 
 if __name__== "__main__" : 
+    print("Welcome to Swat's Sniffer")
+    print(r"""
+           / \      _-'
+         _/|  \-''- _ /
+    __-' { |          \
+        /             \
+        /       "o.  |o }
+        |            \ ;
+                      ',
+           \_         __\
+            ''-_    \.//
+               / '-____'
+              /
+            _'
+          _-'
+    """)
+    print("Packet Sniffing started")
+    print(datetime.now())
+    print("-"*150)
     main()
     
